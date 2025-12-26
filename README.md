@@ -1,6 +1,6 @@
 # GTAL — Graph Tracking Architecture Learning
 
-[![Python Version](https://img.shields.io/badge/Python-3.11-blue)](https://www.python.org/)s
+[![Python Version](https://img.shields.io/badge/Python-3.11-blue)](https://www.python.org/)
 
 **Project Goal**  
 Design and validate a probabilistic, uncertainty-aware, temporal graph tracking architecture capable of learning normal transactional network behavior at scale and detecting statistically significant deviations under noisy and incomplete observations.
