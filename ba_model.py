@@ -1,6 +1,7 @@
 import networkx as nx 
 import random 
 import numpy as np
+from latent_node_state import Latent_Node_States
 
 class BA_Model: 
 
@@ -14,59 +15,48 @@ class BA_Model:
         true_flows = {}
         observed_flows = {}
 
-        G_undirected = nx.barabasi_albert_graph(self.n, self.m) 
-
-        # conver to directed 
+        G_undirected = nx.barabasi_albert_graph(self.n, self.m)
         G = G_undirected.to_directed()
 
-        # Assign weighted attributes 
-        # Lambda (λ): Base rate 
-        # Sigma (σ): Noise level 
+        for (u, v) in G.edges():
+            G.edges[u, v]['lambda'] = random.uniform(0.1, 5.0)
+            G.edges[u, v]['sigma'] = random.uniform(0.01, 1.0)
 
-        for (u,v) in G.edges(): 
-            G.edges[u,v]['lambda'] = round(random.uniform(0.1, 5.0), 3)
-            G.edges[u,v]['sigma'] = round(random.uniform(0.01, 1.0), 3)
+        latent_states = Latent_Node_States(G.nodes())
 
         for t in range(self.T):
+            latent_states.step()
+
             true_flows[t] = {}
             observed_flows[t] = {}
 
-            for (u,v) in G.edges(): 
-                lam = G.edges[u, v]['lambda']
-                sigma = G.in_edges[u, v]['sigma']
+            for (u, v) in G.edges():
+                lam_base = G.edges[u, v]['lambda']
+                sigma = G.edges[u, v]['sigma']
 
-                # Latent true flow 
-                f_ij = np.random.poisson(lam)
+                mult = latent_states.lambda_multiplier(u, v)
+                lam_t = max(lam_base * mult, 1e-6)
 
-                #Observation noise 
-                noise = np.random.normal(0, sigma)
-                y_ij = f_ij + noise 
+                if random.random() < 0.2:
+                    f_ij = 0
+                else:
+                    f_ij = np.random.poisson(lam_t)
 
-                # Missingness 
+                y_ij = max(f_ij + np.random.normal(0, sigma), 0.0)
 
-                if random.random() < self.p_missing: 
-                    observed_flows[t][(u,v)] = None
-                else: 
-                    observed_flows[t][(u, v)] = y_ij
+                true_flows[t][(u, v)] = f_ij
 
-                true_flows[t][(u,v)] = f_ij
+                observed_flows[t][(u, v)] = (
+                    None if random.random() < self.p_missing else y_ij
+                )
 
+        return G, true_flows, observed_flows
 
+                
 
-"""
-
-“By assigning a baseline rate λᵢⱼ and observation noise σᵢⱼ 
-to each edge, the network is parameterized as a stochastic 
-generative model for transactional flows. This formulation 
-supports discrete-time probabilistic simulation of flow 
-propagation under uncertainty and provides a natural 
-foundation for later extensions to continuous-time or 
-event-driven models.”
-
-"""
-
-
-
+              
+                
+                
 
 
 

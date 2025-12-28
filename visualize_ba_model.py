@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 class Visualize_BA_Model: 
 
@@ -12,10 +13,17 @@ class Visualize_BA_Model:
     def sketch_graph(self): 
 
         true_series = [self.true_flows[t][self.edge] for t in range(self.T)]
-        observational_series = [self.observation_flows[t][self.edge] for t in range(self.T)]
 
-        plt.plot(true_series, label="True Flow")
-        plt.plot(observational_series, label="Observed Flow", linestyle='--')
+        # observational_series should be made so that it supports NaN values 
+        observational_series = [
+                                self.observation_flows[t][self.edge] 
+                                if self.observation_flows[t][self.edge] is not None
+                                else np.nan
+                                for t in range(self.T)
+                                ]
+
+        plt.plot(true_series, label="True Flow", linewidth=2)
+        plt.plot(observational_series, label="Observed Flow", linestyle='--', markersize=3)
 
         plt.legend()
 
