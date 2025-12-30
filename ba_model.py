@@ -1,15 +1,16 @@
-import networkx as nx 
-import random 
+import networkx as nx
+import random
 import numpy as np
 from latent_node_state import Latent_Node_States
 
-class BA_Model: 
+
+class BA_Model:
 
     def __init__(self, T, p_missing, n, m):
         self.T = T
         self.p_missing = p_missing
-        self.n = n 
-        self.m = m 
+        self.n = n
+        self.m = m
 
     def build(self):
         true_flows = {}
@@ -24,6 +25,14 @@ class BA_Model:
 
         latent_states = Latent_Node_States(G.nodes())
 
+        degrees = dict(G.degree())
+        sorted_nodes = sorted(degrees, key=degrees.get, reverse=True)
+        num_anomaly_nodes = max(1, int(0.1 * self.n))  # top 10%
+        anomaly_nodes = set(sorted_nodes[:num_anomaly_nodes])
+        anomaly_start = int(0.6 * self.T)
+        anomaly_end   = int(0.8 * self.T)
+        anomaly_multiplier = 2.5
+
         for t in range(self.T):
             latent_states.step()
 
@@ -34,8 +43,16 @@ class BA_Model:
                 lam_base = G.edges[u, v]['lambda']
                 sigma = G.edges[u, v]['sigma']
 
+                # baseline latent modulation
                 mult = latent_states.lambda_multiplier(u, v)
-                lam_t = max(lam_base * mult, 1e-6)
+                lam_t = lam_base * mult
+
+
+                if anomaly_start <= t <= anomaly_end:
+                    if u in anomaly_nodes or v in anomaly_nodes:
+                        lam_t *= anomaly_multiplier
+
+                lam_t = max(lam_t, 1e-6)
 
                 if random.random() < 0.2:
                     f_ij = 0
@@ -45,18 +62,10 @@ class BA_Model:
                 y_ij = max(f_ij + np.random.normal(0, sigma), 0.0)
 
                 true_flows[t][(u, v)] = f_ij
-
                 observed_flows[t][(u, v)] = (
                     None if random.random() < self.p_missing else y_ij
                 )
 
         return G, true_flows, observed_flows
-
-                
-
-              
-                
-                
-
 
 
